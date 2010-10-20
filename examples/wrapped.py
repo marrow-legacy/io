@@ -14,4 +14,8 @@ class HTTPResponse(Protocol):
 
 
 if __name__ == '__main__':
+    import logging
+    
+    logging.basicConfig(level=logging.DEBUG)
+    
     Server(None, 8010, HTTPResponse).start()
