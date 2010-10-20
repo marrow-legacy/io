@@ -20,7 +20,7 @@ import errno
 import logging
 import socket
 
-from marrow.io.core import ioloop
+from marrow.io import ioloop
 
 try:
     import ssl # Python 2.6+

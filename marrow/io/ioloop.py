@@ -24,7 +24,7 @@ import select
 import time
 import traceback
 
-from marrow.io.core import stack_context
+from marrow.io import stack_context
 
 try:
     import signal
@@ -35,8 +35,8 @@ try:
     import fcntl
 except ImportError:
     if os.name == 'nt':
-        from marrow.io.core import win32_support
-        from marrow.io.core import win32_support as fcntl
+        from marrow.io import win32_support
+        from marrow.io import win32_support as fcntl
     else:
         raise
 
