@@ -3,7 +3,7 @@
 """An example IOLoop/IOStream example, simplified version of the raw example."""
 
 
-from marrow.io import Protocol, Server
+from marrow.server.base import Protocol, Server
 
 
 
