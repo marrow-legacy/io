@@ -32,13 +32,6 @@ else:
 execfile(os.path.join("marrow", "io", "release.py"), globals(), locals())
 
 
-# Build the epoll extension for Linux systems with Python < 2.6.
-# NOTE: 2.6 is the minimum version now.
-# extensions = []
-# 
-# if "linux" in sys.platform.lower() and sys.version_info <= (2, 6):
-#     extensions.append(Extension("marrow.io.epoll", ["marrow/io/epoll.c"]))
-
 
 setup(
         name = name,
@@ -66,7 +59,14 @@ setup(
                 "License :: OSI Approved :: Apache Software License",
                 "Operating System :: OS Independent",
                 "Programming Language :: Python",
-                "Topic :: Software Development :: Libraries :: Python Modules"
+                "Programming Language :: Python :: 2.6",
+                "Programming Language :: Python :: 2.7",
+                "Programming Language :: Python :: 3",
+                "Programming Language :: Python :: 3.1",
+                "Programming Language :: Python :: 3.2",
+                "Topic :: Software Development :: Libraries :: Python Modules",
+                "Topic :: System :: Networking",
+                "Topic :: Utilities"
             ],
         
         packages = find_packages(exclude=['tests', 'tests.*', 'docs']),
