@@ -24,6 +24,7 @@ import select
 import time
 import traceback
 
+from marrow.util.compat import exception
 from marrow.io import stack_context
 
 try:
@@ -225,16 +226,17 @@ class IOLoop(object):
 
             try:
                 event_pairs = self._impl.poll(poll_timeout)
-            except Exception, e:
+            except Exception:
+                exc = exception().exception
                 # Depending on python version and IOLoop implementation,
                 # different exception types may be thrown and there are
                 # two ways EINTR might be signaled:
                 # * e.errno == errno.EINTR
                 # * e.args is like (errno.EINTR, 'Interrupted system call')
-                if (getattr(e, 'errno') == errno.EINTR or
-                    (isinstance(getattr(e, 'args'), tuple) and
-                     len(e.args) == 2 and e.args[0] == errno.EINTR)):
-                    logging.warning("Interrupted system call", exc_info=1)
+                if (getattr(exc, 'errno') == errno.EINTR or
+                    (isinstance(getattr(exc, 'args'), tuple) and
+                     len(exc.args) == 2 and exc.args[0] == errno.EINTR)):
+                    logging.exception("Interrupted system call")
                     continue
                 else:
                     raise
@@ -254,16 +256,15 @@ class IOLoop(object):
                     self._handlers[fd](fd, events)
                 except (KeyboardInterrupt, SystemExit):
                     raise
-                except (OSError, IOError), e:
-                    if e[0] == errno.EPIPE:
+                except (OSError, IOError):
+                    exc = exception().exception
+                    if exc.args[0] == errno.EPIPE:
                         # Happens when the client closes the connection
                         pass
                     else:
-                        logging.error("Exception in I/O handler for fd %d",
-                                      fd, exc_info=True)
+                        logging.exception("Exception in I/O handler for fd %d", fd)
                 except:
-                    logging.error("Exception in I/O handler for fd %d",
-                                  fd, exc_info=True)
+                    logging.exception("Exception in I/O handler for fd %d", fd)
         # reset the stopped flag so another start/stop pair can be issued
         self._stopped = False
         if self._blocking_log_threshold is not None:
@@ -328,7 +329,7 @@ class IOLoop(object):
         The exception itself is not passed explicitly, but is available
         in sys.exc_info.
         """
-        logging.error("Exception in callback %r", callback, exc_info=True)
+        logging.exception("Exception in callback %r", callback)
 
     def _read_waker(self, fd, events):
         try:
