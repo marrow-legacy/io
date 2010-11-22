@@ -55,24 +55,26 @@ class IOLoop(object):
         import functools
         import ioloop
         import socket
-
+        from marrow.util.compat import exception
+        
         def connection_ready(sock, fd, events):
             while True:
                 try:
                     connection, address = sock.accept()
-                except socket.error, e:
-                    if e[0] not in (errno.EWOULDBLOCK, errno.EAGAIN):
+                except socket.error:
+                    exc = exception().exception
+                    if exc.attr[0] not in (errno.EWOULDBLOCK, errno.EAGAIN):
                         raise
                     return
                 connection.setblocking(0)
                 handle_connection(connection, address)
-
+        
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setblocking(0)
         sock.bind(("", port))
         sock.listen(128)
-
+        
         io_loop = ioloop.IOLoop.instance()
         callback = functools.partial(connection_ready, sock)
         io_loop.add_handler(sock.fileno(), callback, io_loop.READ)
@@ -236,7 +238,7 @@ class IOLoop(object):
                 if (getattr(exc, 'errno') == errno.EINTR or
                     (isinstance(getattr(exc, 'args'), tuple) and
                      len(exc.args) == 2 and exc.args[0] == errno.EINTR)):
-                    logging.exception("Interrupted system call")
+                    logging.warning("Interrupted system call", exc_info=True)
                     continue
                 else:
                     raise
@@ -262,9 +264,9 @@ class IOLoop(object):
                         # Happens when the client closes the connection
                         pass
                     else:
-                        logging.exception("Exception in I/O handler for fd %d", fd)
+                        logging.error("Exception in I/O handler for fd %d", fd, exc_info=True)
                 except:
-                    logging.exception("Exception in I/O handler for fd %d", fd)
+                    logging.error("Exception in I/O handler for fd %d", fd, exc_info=True)
         # reset the stopped flag so another start/stop pair can be issued
         self._stopped = False
         if self._blocking_log_threshold is not None:
