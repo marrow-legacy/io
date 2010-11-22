@@ -10,7 +10,7 @@ from marrow.server.protocol import Protocol
 
 class HTTPResponse(Protocol):
     def accept(self, client):
-        self.server.respond(client, b"HTTP/1.0 200 OK\r\nContent-Length: 5\r\n\r\nPong!\r\n", client.close)
+        client.write(b"HTTP/1.0 200 OK\r\nContent-Length: 5\r\n\r\nPong!\r\n", client.close)
 
 
 if __name__ == '__main__':
