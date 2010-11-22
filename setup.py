@@ -13,8 +13,8 @@ except ImportError:
 from setuptools import setup, find_packages, Extension
 
 
-if sys.version_info <= (2, 5):
-    raise SystemExit("Python 2.5 or later is required.")
+if sys.version_info <= (2, 6):
+    raise SystemExit("Python 2.6 or later is required.")
 
 if sys.version_info >= (3,0):
     def execfile(filename, globals_=None, locals_=None):
@@ -33,10 +33,11 @@ execfile(os.path.join("marrow", "io", "release.py"), globals(), locals())
 
 
 # Build the epoll extension for Linux systems with Python < 2.6.
-extensions = []
-
-if "linux" in sys.platform.lower() and sys.version_info <= (2, 6):
-    extensions.append(Extension("marrow.io.epoll", ["marrow/io/epoll.c"]))
+# NOTE: 2.6 is the minimum version now.
+# extensions = []
+# 
+# if "linux" in sys.platform.lower() and sys.version_info <= (2, 6):
+#     extensions.append(Extension("marrow.io.epoll", ["marrow/io/epoll.c"]))
 
 
 setup(
@@ -52,6 +53,7 @@ setup(
         license = license,
         keywords = '',
         
+        use_2to3 = True,
         install_requires = [],
         
         test_suite = 'nose.collector',
@@ -73,7 +75,6 @@ setup(
                 '': ['Makefile', 'README.textile', 'LICENSE', 'distribute_setup.py']
             },
         zip_safe = True,
-        ext_modules = extensions,
         
         namespace_packages = ['marrow'],
     )

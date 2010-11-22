@@ -114,8 +114,8 @@ class IOLoop(object):
             self._set_nonblocking(w)
             self._set_close_exec(r)
             self._set_close_exec(w)
-            self._waker_reader = os.fdopen(r, "r", 0)
-            self._waker_writer = os.fdopen(w, "w", 0)
+            self._waker_reader = os.fdopen(r, "rb", 0)
+            self._waker_writer = os.fdopen(w, "wb", 0)
         else:
             self._waker_reader = self._waker_writer = win32_support.Pipe()
             r = self._waker_writer.reader_fd
@@ -306,7 +306,7 @@ class IOLoop(object):
 
     def _wake(self):
         try:
-            self._waker_writer.write("x")
+            self._waker_writer.write(b"x")
         except IOError:
             pass
 
