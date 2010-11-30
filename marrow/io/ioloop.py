@@ -513,13 +513,8 @@ elif hasattr(select, "kqueue"):
     # Python 2.6+ on BSD or Mac
     _poll = _KQueue
 else:
-    try:
-        # Linux systems with our C module installed
-        import epoll
-        _poll = _EPoll
-    except:
-        # All other systems
-        import sys
-        if "linux" in sys.platform:
-            logging.warning("epoll module not found; using select()")
-        _poll = _Select
+    # All other systems
+    import sys
+    if "linux" in sys.platform:
+        logging.warning("epoll module not found; using select()")
+    _poll = _Select
