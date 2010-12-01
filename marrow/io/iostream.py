@@ -21,6 +21,7 @@ import logging
 import socket
 
 from marrow.io import ioloop
+from marrow.util.compat import exception
 
 try:
     import ssl # Python 2.6+
@@ -184,7 +185,8 @@ class IOStream(object):
     def _handle_read(self):
         try:
             chunk = self.socket.recv(self.read_chunk_size)
-        except socket.error, e:
+        except socket.error:
+            e = exception().exception
             if e[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                 return
             else:
@@ -222,7 +224,8 @@ class IOStream(object):
             try:
                 num_bytes = self.socket.send(self._write_buffer)
                 self._write_buffer = self._write_buffer[num_bytes:]
-            except socket.error, e:
+            except socket.error:
+                e = exception().exception
                 if e[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                     break
                 else:
@@ -261,7 +264,8 @@ class SSLIOStream(IOStream):
         # Based on code from test_ssl.py in the python stdlib
         try:
             self.socket.do_handshake()
-        except ssl.SSLError, err:
+        except ssl.SSLError:
+            err = exception().exception
             if err.args[0] == ssl.SSL_ERROR_WANT_READ:
                 self._add_io_state(self.io_loop.READ)
                 return
@@ -272,7 +276,8 @@ class SSLIOStream(IOStream):
                                  ssl.SSL_ERROR_ZERO_RETURN):
                 return self.close()
             raise
-        except socket.error, err:
+        except socket.error:
+            err = exception().exception
             if err.args[0] == errno.ECONNABORTED:
                 return self.close()
         else:
