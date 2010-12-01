@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# encoding: utf-8
 #
 # Copyright 2009 Facebook
 #
@@ -15,6 +15,8 @@
 # under the License.
 
 """A level-triggered I/O loop for non-blocking sockets."""
+
+from __future__ import unicode_literals
 
 import bisect
 import errno
@@ -40,6 +42,12 @@ except ImportError:
         from marrow.io import win32_support as fcntl
     else:
         raise
+
+
+log = __import__('logging').getLogger(__name__)
+__all__ = ['IOLoop', 'PeriodicCallback']
+
+
 
 class IOLoop(object):
     """A level-triggered I/O loop.
@@ -164,14 +172,14 @@ class IOLoop(object):
         try:
             self._impl.unregister(fd)
         except (OSError, IOError):
-            logging.debug("Error deleting fd from IOLoop", exc_info=True)
+            log.debug("Error deleting fd from IOLoop", exc_info=True)
 
     def set_blocking_log_threshold(self, s):
         """Logs a stack trace if the ioloop is blocked for more than s seconds.
         Pass None to disable.  Requires python 2.6 on a unixy platform.
         """
         if not hasattr(signal, "setitimer"):
-            logging.error("set_blocking_log_threshold requires a signal module "
+            log.error("set_blocking_log_threshold requires a signal module "
                        "with the setitimer method")
             return
         self._blocking_log_threshold = s
@@ -179,7 +187,7 @@ class IOLoop(object):
             signal.signal(signal.SIGALRM, self._handle_alarm)
 
     def _handle_alarm(self, signal, frame):
-        logging.warning('IOLoop blocked for %f seconds in\n%s',
+        log.warning('IOLoop blocked for %f seconds in\n%s',
                      self._blocking_log_threshold,
                      ''.join(traceback.format_stack(frame)))
 
@@ -238,7 +246,7 @@ class IOLoop(object):
                 if (getattr(exc, 'errno') == errno.EINTR or
                     (isinstance(getattr(exc, 'args'), tuple) and
                      len(exc.args) == 2 and exc.args[0] == errno.EINTR)):
-                    logging.warning("Interrupted system call", exc_info=True)
+                    log.warning("Interrupted system call", exc_info=True)
                     continue
                 else:
                     raise
@@ -264,9 +272,9 @@ class IOLoop(object):
                         # Happens when the client closes the connection
                         pass
                     else:
-                        logging.error("Exception in I/O handler for fd %d", fd, exc_info=True)
+                        log.error("Exception in I/O handler for fd %d", fd, exc_info=True)
                 except:
-                    logging.error("Exception in I/O handler for fd %d", fd, exc_info=True)
+                    log.error("Exception in I/O handler for fd %d", fd, exc_info=True)
         # reset the stopped flag so another start/stop pair can be issued
         self._stopped = False
         if self._blocking_log_threshold is not None:
@@ -331,7 +339,7 @@ class IOLoop(object):
         The exception itself is not passed explicitly, but is available
         in sys.exc_info.
         """
-        logging.exception("Exception in callback %r", callback)
+        log.exception("Exception in callback %r", callback)
 
     def _read_waker(self, fd, events):
         try:
@@ -390,7 +398,7 @@ class PeriodicCallback(object):
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            logging.error("Error in periodic callback", exc_info=True)
+            log.error("Error in periodic callback", exc_info=True)
         self.start()
 
 
@@ -516,5 +524,5 @@ else:
     # All other systems
     import sys
     if "linux" in sys.platform:
-        logging.warning("epoll module not found; using select()")
+        log.warning("epoll module not found; using select()")
     _poll = _Select
