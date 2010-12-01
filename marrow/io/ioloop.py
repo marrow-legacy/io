@@ -18,24 +18,26 @@
 
 from __future__ import unicode_literals
 
-import bisect
-import errno
 import os
-import logging
+import errno
 import select
-import time
-import traceback
+
+from bisect import insort
+from time import time
+from traceback import format_stack
 
 from marrow.util.compat import exception
 from marrow.io import stack_context
 
 try:
     import signal
+
 except ImportError:
     signal = None
 
 try:
     import fcntl
+
 except ImportError:
     if os.name == 'nt':
         from marrow.io import win32_support
@@ -187,24 +189,25 @@ class IOLoop(object):
             signal.signal(signal.SIGALRM, self._handle_alarm)
 
     def _handle_alarm(self, signal, frame):
-        log.warning('IOLoop blocked for %f seconds in\n%s',
-                     self._blocking_log_threshold,
-                     ''.join(traceback.format_stack(frame)))
+        log.warning('IOLoop blocked for %f seconds in\n%s', self._blocking_log_threshold, ''.join(traceback.format_stack(frame)))
 
     def start(self):
         """Starts the I/O loop.
-
+        
         The loop will run until one of the I/O handlers calls stop(), which
         will make the loop stop after the current event iteration completes.
         """
+        
         if self._stopped:
             self._stopped = False
             return
+        
         self._running = True
+        
         while True:
             # Never use an infinite timeout here - it can stall epoll
             poll_timeout = 0.2
-
+            
             # Prevent IO event starvation by delaying new callbacks
             # to the next iteration of the event loop.
             callbacks = list(self._callbacks)
@@ -218,7 +221,7 @@ class IOLoop(object):
                 poll_timeout = 0.0
 
             if self._timeouts:
-                now = time.time()
+                now = time()
                 while self._timeouts and self._timeouts[0].deadline <= now:
                     timeout = self._timeouts.pop(0)
                     self._run_callback(timeout.callback)
@@ -304,7 +307,7 @@ class IOLoop(object):
     def add_timeout(self, deadline, callback):
         """Calls the given callback at the time deadline from the I/O loop."""
         timeout = _Timeout(deadline, stack_context.wrap(callback))
-        bisect.insort(self._timeouts, timeout)
+        insort(self._timeouts, timeout)
         return timeout
 
     def remove_timeout(self, timeout):
@@ -385,7 +388,7 @@ class PeriodicCallback(object):
 
     def start(self):
         self._running = True
-        timeout = time.time() + self.callback_time / 1000.0
+        timeout = time() + self.callback_time / 1000.0
         self.io_loop.add_timeout(timeout, self._run)
 
     def stop(self):
