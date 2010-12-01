@@ -121,6 +121,7 @@ class AsyncTestCase(unittest.TestCase):
             yield
         except:
             self.__failure = sys.exc_info()
+            log.exception("Error within stack context.")
             self.stop()
     
     def run(self, result=None):
