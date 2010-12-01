@@ -10,7 +10,7 @@ try:
 except ImportError:
     pass
 
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages
 
 
 if sys.version_info <= (2, 6):
