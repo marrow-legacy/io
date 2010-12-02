@@ -213,7 +213,7 @@ class IOStream(object):
         
         except socket.error:
             e = exception().exception
-            if e[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
+            if e.args[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                 return
             
             else:
@@ -260,7 +260,7 @@ class IOStream(object):
             except socket.error:
                 e = exception().exception
                 
-                if e[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
+                if e.args[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                     break
                 
                 else:
