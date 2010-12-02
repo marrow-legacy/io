@@ -17,6 +17,10 @@ log = __import__('logging').getLogger(__name__)
 
 
 class TestIOLoop(AsyncTestCase):
+    def __init__(self, *args, **kw):
+        self.called = False
+        super(TestIOLoop, self).__init__(*args, **kw)
+    
     def test_add_callback_wakeup(self):
         # Make sure that add_callback from inside a running IOLoop
         # wakes up the IOLoop immediately instead of waiting for a timeout.

@@ -391,7 +391,7 @@ class _Timeout(object):
 
 class PeriodicCallback(object):
     """Schedules the given callback to be called periodically.
-
+    
     The callback is called every callback_time milliseconds.
     """
     def __init__(self, callback, callback_time, io_loop=None):
