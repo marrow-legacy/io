@@ -308,9 +308,10 @@ class SSLIOStream(IOStream):
             elif err.args[0] == ssl.SSL_ERROR_WANT_WRITE:
                 self._add_io_state(self.io_loop.WRITE)
                 return
-            elif err.args[0] in (ssl.SSL_ERROR_EOF,
-                                 ssl.SSL_ERROR_ZERO_RETURN):
+            elif err.args[0] in (ssl.SSL_ERROR_EOF, ssl.SSL_ERROR_ZERO_RETURN):
                 return self.close()
+            elif err.args[0] == ssl.SSL_ERROR_SSL:
+                self.close()
             raise
         except socket.error:
             err = exception().exception
