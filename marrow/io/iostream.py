@@ -254,7 +254,7 @@ class IOStream(object):
     def _handle_write(self):
         while self._write_buffer:
             try:
-                num_bytes = self.socket.send(self._write_buffer)
+                num_bytes = self.socket.send(self._write_buffer[:128 * 1024])
                 self._write_buffer = self._write_buffer[num_bytes:]
             
             except socket.error:
