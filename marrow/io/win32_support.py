@@ -7,6 +7,8 @@ import os
 import socket
 import errno
 
+from marrow.util.compat import exception
+
 
 # See: http://msdn.microsoft.com/en-us/library/ms738573(VS.85).aspx
 ioctlsocket = ctypes.windll.ws2_32.ioctlsocket
@@ -87,7 +89,8 @@ class Pipe(object):
             try:
                 self.writer.connect(connect_address)
                 break    # success
-            except socket.error, detail:
+            except socket.error:
+                detail = exception().exception
                 if detail[0] != errno.WSAEADDRINUSE:
                     # "Address already in use" is the only error
                     # I've seen on two WinXP Pro SP2 boxes, under
@@ -113,7 +116,8 @@ class Pipe(object):
         """Emulate a file descriptors read method"""
         try:
             return self.reader.recv(1)
-        except socket.error, ex:
+        except socket.error:
+            ex = exception().exception
             if ex.args[0] == errno.EWOULDBLOCK:
                 raise IOError
             raise
