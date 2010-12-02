@@ -40,7 +40,7 @@ class AsyncTestCase(unittest.TestCase):
             # This avoids leaks, especially when tests are run repeatedly
             # in the same process with autoreload (because curl does not
             # set FD_CLOEXEC on its file descriptors)
-            for fd in self.io_loop._handlers.keys()[:]:
+            for fd in self.io_loop._handlers.keys():
                 if (fd == self.io_loop._waker_reader.fileno() or
                     fd == self.io_loop._waker_writer.fileno()):
                     # Close these through the file objects that wrap
