@@ -17,6 +17,8 @@
 
 """A utility class to write to and read from a non-blocking socket."""
 
+from __future__ import unicode_literals
+
 import errno
 import socket
 import ssl
@@ -83,8 +85,7 @@ class IOStream(object):
         self._write_callback = None
         self._close_callback = None
         self._state = self.io_loop.ERROR
-        self.io_loop.add_handler(
-            self.socket.fileno(), self._handle_events, self._state)
+        self.io_loop.add_handler(self.socket.fileno(), self._handle_events, self._state)
 
     def read_until(self, delimiter, callback):
         """Call callback when we read the given delimiter."""
