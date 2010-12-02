@@ -46,8 +46,7 @@ setup(
         license = license,
         keywords = '',
         
-        use_2to3 = True,
-        install_requires = [],
+        install_requires = ['marrow.util'],
         
         test_suite = 'nose.collector',
         tests_require = ['nose', 'coverage'],
