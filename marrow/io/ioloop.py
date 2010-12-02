@@ -17,7 +17,6 @@
 
 """A level-triggered I/O loop for non-blocking sockets."""
 
-from __future__ import print_statement
 from __future__ import unicode_literals
 
 import os
