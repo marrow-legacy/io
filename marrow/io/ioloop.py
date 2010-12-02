@@ -250,7 +250,7 @@ class IOLoop(object):
                 # * e.args is like (errno.EINTR, 'Interrupted system call')
                 # TODO: Determine if this can be simplified to:
                 # if e.args == (4, "Interrupted system call"):
-                if (getattr(exc, 'errno') == errno.EINTR or
+                if (getattr(exc, 'errno', None) == errno.EINTR or
                     (isinstance(getattr(exc, 'args'), tuple) and
                      len(exc.args) == 2 and exc.args[0] == errno.EINTR)):
                     log.warning("Interrupted system call", exc_info=True)
