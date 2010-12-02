@@ -18,16 +18,17 @@
 """A utility class to write to and read from a non-blocking socket."""
 
 import errno
-import logging
 import socket
+import ssl
 
 from marrow.io import ioloop
 from marrow.util.compat import exception
 
-try:
-    import ssl # Python 2.6+
-except ImportError:
-    ssl = None
+
+log = __import__('logging').getLogger(__name__)
+__all__ = ['IOStream', 'SSLIOStream']
+
+
 
 class IOStream(object):
     """A utility class to write to and read from a non-blocking socket.
@@ -148,7 +149,7 @@ class IOStream(object):
     
     def _handle_events(self, fd, events):
         if not self.socket:
-            logging.warning("Got events for closed stream %d", fd)
+            log.warning("Got events for closed stream %d", fd)
             return
         if events & self.io_loop.READ:
             self._handle_read()
@@ -191,8 +192,7 @@ class IOStream(object):
             if e[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                 return
             else:
-                logging.warning("Read error on %d: %s",
-                                self.socket.fileno(), e)
+                log.warning("Read error on %d: %s", self.socket.fileno(), e)
                 self.close()
                 return
         if not chunk:
@@ -200,7 +200,7 @@ class IOStream(object):
             return
         self._read_buffer += chunk
         if len(self._read_buffer) >= self.max_buffer_size:
-            logging.error("Reached maximum read buffer size")
+            log.error("Reached maximum read buffer size")
             self.close()
             return
         if self._read_bytes:
@@ -230,8 +230,7 @@ class IOStream(object):
                 if e[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                     break
                 else:
-                    logging.warning("Write error on %d: %s",
-                                    self.socket.fileno(), e)
+                    log.warning("Write error on %d: %s", self.socket.fileno(), e)
                     self.close()
                     return
         if not self._write_buffer and self._write_callback:
