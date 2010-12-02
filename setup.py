@@ -50,7 +50,7 @@ setup(
         install_requires = [],
         
         test_suite = 'nose.collector',
-        tests_require = ['nose', 'coverage', 'nose-achievements'],
+        tests_require = ['nose', 'coverage'],
         
         classifiers = [
                 "Development Status :: 5 - Production/Stable",
