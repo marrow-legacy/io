@@ -196,6 +196,7 @@ class IOStream(object):
     def _run_callback(self, callback, *args, **kwargs):
         try:
             callback(*args, **kwargs)
+        
         except:
             # Close the socket on an uncaught exception from a user callback
             # (It would eventually get closed when the socket object is
@@ -209,38 +210,46 @@ class IOStream(object):
     def _handle_read(self):
         try:
             chunk = self.socket.recv(self.read_chunk_size)
+        
         except socket.error:
             e = exception().exception
             if e[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                 return
+            
             else:
                 log.warning("Read error on %d: %s", self.socket.fileno(), e)
                 self.close()
                 return
+        
         if not chunk:
             self.close()
             return
+        
         self._read_buffer += chunk
-        if len(self._read_buffer) >= self.max_buffer_size:
-            log.error("Reached maximum read buffer size")
+        rblen = len(self._read_buffer)
+        
+        if rblen >= self.max_buffer_size:
+            log.error("Connection %d reached maximum read buffer size.", self.socket.fileno())
             self.close()
             return
+        
         if self._read_bytes:
-            if len(self._read_buffer) >= self._read_bytes:
+            if rblen >= self._read_bytes:
                 num_bytes = self._read_bytes
                 callback = self._read_callback
                 self._read_callback = None
                 self._read_bytes = None
                 self._run_callback(callback, self._consume(num_bytes))
+        
         elif self._read_delimiter:
             loc = self._read_buffer.find(self._read_delimiter)
+            
             if loc != -1:
                 callback = self._read_callback
                 delimiter_len = len(self._read_delimiter)
                 self._read_callback = None
                 self._read_delimiter = None
-                self._run_callback(callback,
-                                   self._consume(loc + delimiter_len))
+                self._run_callback(callback, self._consume(loc + delimiter_len))
     
     def _handle_write(self):
         while self._write_buffer:
