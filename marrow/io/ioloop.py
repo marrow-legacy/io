@@ -393,8 +393,8 @@ class IOLoop(object):
         # log.debug("Reading waker pipe.")
         
         try:
-            while True:
-                self._waker_reader.read()
+            while self._waker_reader.read():
+                pass
                 # log.debug("Read hunk.")
         
         except IOError:
