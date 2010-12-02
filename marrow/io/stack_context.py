@@ -110,9 +110,7 @@ def wrap(fn):
         # If we're moving up the stack (or to an entirely different stack),
         # _state.contexts will have elements not in contexts.  Use
         # NullContext to clear the state and then recreate from contexts.
-        if (len(_state.contexts) > len(contexts) or
-            any(a is not b
-                for a, b in itertools.izip(_state.contexts, contexts))):
+        if (len(_state.contexts) > len(contexts) or any(a is not b for a, b in itertools.zip(_state.contexts, contexts))):
             # contexts have been removed or changed, so start over
             new_contexts = ([NullContext()] +
                             [StackContext(c) for c in contexts])
