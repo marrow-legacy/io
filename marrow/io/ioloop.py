@@ -17,6 +17,7 @@
 
 """A level-triggered I/O loop for non-blocking sockets."""
 
+from __future__ import print_statement
 from __future__ import unicode_literals
 
 import os
@@ -111,6 +112,8 @@ class IOLoop(object):
     ERROR = _EPOLLERR | _EPOLLHUP | _EPOLLRDHUP
     
     def __init__(self, impl=None):
+        log.debug("IOLoop reactor initializing.")
+        
         self._impl = impl or _poll()
         if hasattr(self._impl, 'fileno'):
             self._set_close_exec(self._impl.fileno())
@@ -135,6 +138,7 @@ class IOLoop(object):
         else:
             self._waker_reader = self._waker_writer = win32_support.Pipe()
             r = self._waker_writer.reader_fd
+        
         self.add_handler(r, self._read_waker, self.READ)
     
     @classmethod
@@ -153,6 +157,8 @@ class IOLoop(object):
                 def __init__(self, io_loop=None):
                     self.io_loop = io_loop or IOLoop.instance()
         """
+        log.debug("Returning IOLoop singleton.")
+        
         if not hasattr(cls, "_instance"):
             cls._instance = cls()
         return cls._instance
@@ -163,19 +169,25 @@ class IOLoop(object):
     
     def add_handler(self, fd, handler, events):
         """Registers the given handler to receive the given events for fd."""
+        log.debug("Registering handler %r on %d.", handler, fd)
         self._handlers[fd] = stack_context.wrap(handler)
         self._impl.register(fd, events | self.ERROR)
     
     def update_handler(self, fd, events):
         """Changes the events we listen for fd."""
+        log.debug("Updating handler events on %d.", fd)
         self._impl.modify(fd, events | self.ERROR)
     
     def remove_handler(self, fd):
         """Stop listening for events on fd."""
+        log.debug("Removing handlers from %d.", fd)
+        
         self._handlers.pop(fd, None)
         self._events.pop(fd, None)
+        
         try:
             self._impl.unregister(fd)
+        
         except (OSError, IOError):
             log.debug("Error deleting fd from IOLoop", exc_info=True)
     
@@ -184,9 +196,11 @@ class IOLoop(object):
         Pass None to disable.  Requires python 2.6 on a unixy platform.
         """
         if not hasattr(signal, "setitimer"):
-            log.error("set_blocking_log_threshold requires a signal module "
-                       "with the setitimer method")
+            log.error("set_blocking_log_threshold requires a signal module with the setitimer method")
             return
+        
+        log.debug("Setting blocking threshhold to %r.", s)
+        
         self._blocking_log_threshold = s
         if s is not None:
             signal.signal(signal.SIGALRM, self._handle_alarm)
@@ -200,6 +214,7 @@ class IOLoop(object):
         The loop will run until one of the I/O handlers calls stop(), which
         will make the loop stop after the current event iteration completes.
         """
+        log.debug("IOLoop reactor starting.")
         
         if self._stopped:
             self._stopped = False
@@ -208,6 +223,8 @@ class IOLoop(object):
         self._running = True
         
         while True:
+            log.debug("Starting reactor tick.")
+            
             # Never use an infinite timeout here - it can stall epoll
             poll_timeout = 0.2
             
@@ -221,18 +238,23 @@ class IOLoop(object):
                     self._run_callback(callback)
             
             if self._callbacks:
+                log.debug("Callbacks waiting, reducing timeout.")
                 poll_timeout = 0.0
             
             if self._timeouts:
+                log.debug("Timeouts pending.")
+                
                 now = time()
                 while self._timeouts and self._timeouts[0].deadline <= now:
                     timeout = self._timeouts.pop(0)
                     self._run_callback(timeout.callback)
+                
                 if self._timeouts:
                     milliseconds = self._timeouts[0].deadline - now
                     poll_timeout = min(milliseconds, poll_timeout)
             
             if not self._running:
+                log.debug("IOLoop reactor exiting.")
                 break
             
             if self._blocking_log_threshold is not None:
@@ -241,6 +263,7 @@ class IOLoop(object):
             
             try:
                 event_pairs = self._impl.poll(poll_timeout)
+            
             except Exception:
                 exc = exception().exception
                 # Depending on python version and IOLoop implementation,
@@ -257,6 +280,7 @@ class IOLoop(object):
                     continue
                 
                 else:
+                    log.exception("Error polling.")
                     raise
             
             if self._blocking_log_threshold is not None:
@@ -307,6 +331,7 @@ class IOLoop(object):
         ioloop.start() will return after async_method has run its callback,
         whether that callback was invoked before or after ioloop.start.
         """
+        log.debug("IOLoop reactor stopping.")
         self._running = False
         self._stopped = True
         self._wake()
@@ -317,29 +342,39 @@ class IOLoop(object):
     
     def add_timeout(self, deadline, callback):
         """Calls the given callback at the time deadline from the I/O loop."""
+        log.debug("Adding timeout of %r using %r.", deadline, callback)
         timeout = _Timeout(deadline, stack_context.wrap(callback))
         insort(self._timeouts, timeout)
         return timeout
     
     def remove_timeout(self, timeout):
+        log.debug("Removing %r timeout.", timeout)
         self._timeouts.remove(timeout)
     
     def add_callback(self, callback):
         """Calls the given callback on the next I/O loop iteration."""
+        log.debug("Adding %r callback.", callback)
         self._callbacks.add(stack_context.wrap(callback))
         self._wake()
     
     def _wake(self):
+        log.debug("Waking up.")
+        
         try:
             self._waker_writer.write(b"x")
+        
         except IOError:
             pass
     
     def _run_callback(self, callback):
+        log.debug("Executing %r callback.", callback)
+        
         try:
             callback()
+        
         except (KeyboardInterrupt, SystemExit):
             raise
+        
         except:
             self.handle_callback_exception(callback)
     
@@ -353,39 +388,47 @@ class IOLoop(object):
         The exception itself is not passed explicitly, but is available
         in sys.exc_info.
         """
-        log.exception("Exception in callback %r", callback)
+        log.exception("Exception in callback %r.", callback)
     
     def _read_waker(self, fd, events):
+        log.debug("Reading waker pipe.")
+        
         try:
             while True:
                 self._waker_reader.read()
+                log.debug("Read hunk.")
+        
         except IOError:
             pass
     
     def _set_nonblocking(self, fd):
+        log.debug("Setting %d to non-blocking state.", fd)
         flags = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
     
     def _set_close_exec(self, fd):
+        log.debug("Setting CLOEXEC on %d.", fd)
         flags = fcntl.fcntl(fd, fcntl.F_GETFD)
         fcntl.fcntl(fd, fcntl.F_SETFD, flags | fcntl.FD_CLOEXEC)
 
 
 class _Timeout(object):
     """An IOLoop timeout, a UNIX timestamp and a callback"""
-
+    
     # Reduce memory overhead when there are lots of pending callbacks
     __slots__ = ['deadline', 'callback']
-
+    
     def __init__(self, deadline, callback):
+        log.debug("Initializing timeout with %r deadline, %r callback.", deadline, callback)
         self.deadline = deadline
         self.callback = callback
-
+    
     def __cmp__(self, other):
-        return cmp((self.deadline, id(self.callback)),
-                   (other.deadline, id(other.callback)))
+        log.debug("Comparing timeouts.")
+        return cmp((self.deadline, id(self.callback)), (other.deadline, id(other.callback)))
     
     def __lt__(self, other):
+        log.debug("Comparing timeout less-than.")
         return (self.deadline, id(self.callback)) < (other.deadline, id(other.callback))
 
 
@@ -395,27 +438,36 @@ class PeriodicCallback(object):
     The callback is called every callback_time milliseconds.
     """
     def __init__(self, callback, callback_time, io_loop=None):
+        log.debug("Adding %r callback, with %r period, to %r io_loop.", callback, callback_time, io_loop)
         self.callback = callback
         self.callback_time = callback_time
         self.io_loop = io_loop or IOLoop.instance()
-        self._running = True
-
+        self._running = False
+    
     def start(self):
+        log.debug("Starting periodic callback.")
         self._running = True
         timeout = time() + self.callback_time / 1000.0
         self.io_loop.add_timeout(timeout, self._run)
-
+    
     def stop(self):
+        log.debug("Stopping periodic callback.")
         self._running = False
-
+    
     def _run(self):
         if not self._running: return
+        
+        log.debug("Executing periodic callback.")
+        
         try:
             self.callback()
+        
         except (KeyboardInterrupt, SystemExit):
             raise
+        
         except:
             log.error("Error in periodic callback", exc_info=True)
+        
         self.start()
 
 
