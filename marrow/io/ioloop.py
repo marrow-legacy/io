@@ -398,7 +398,7 @@ class PeriodicCallback(object):
         self.callback = callback
         self.callback_time = callback_time
         self.io_loop = io_loop or IOLoop.instance()
-        self._running = False
+        self._running = True
 
     def start(self):
         self._running = True
