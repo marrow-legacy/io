@@ -43,6 +43,7 @@ if __name__ == '__main__':
     sock.listen(5000)
     
     io_loop = ioloop.IOLoop.instance()
+    io_loop.set_blocking_log_threshold(2)
     callback = functools.partial(connection_ready, sock)
     io_loop.add_handler(sock.fileno(), callback, io_loop.READ)
     try:
