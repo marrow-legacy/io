@@ -256,14 +256,19 @@ class IOStream(object):
             try:
                 num_bytes = self.socket.send(self._write_buffer)
                 self._write_buffer = self._write_buffer[num_bytes:]
+            
             except socket.error:
                 e = exception().exception
+                
                 if e[0] in (errno.EWOULDBLOCK, errno.EAGAIN):
                     break
+                
                 else:
                     log.warning("Write error on %d: %s", self.socket.fileno(), e)
                     self.close()
                     return
+        
+        # TODO: Allow multiple callbacks.
         if not self._write_buffer and self._write_callback:
             callback = self._write_callback
             self._write_callback = None
@@ -276,7 +281,7 @@ class IOStream(object):
     
     def _check_closed(self):
         if not self.socket:
-            raise IOError("Stream is closed")
+            raise IOError("Stream is closed.")
     
     def _add_io_state(self, state):
         if not self._state & state:
