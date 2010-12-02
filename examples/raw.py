@@ -32,6 +32,10 @@ def connection_ready(sock, fd, events):
         stream.write(b"HTTP/1.0 200 OK\r\nContent-Length: 5\r\n\r\nPong!\r\n", stream.close)
 
 if __name__ == '__main__':
+    import logging
+    
+    logging.basicConfig(level=logging.DEBUG)
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setblocking(0)
