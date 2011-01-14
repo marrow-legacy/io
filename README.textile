@@ -2,4 +2,4 @@ h2. Marrow IO
 
 bq. A stand-alone version of the Tornado IOLoop and IOStream implementations for those who don't need the full stack.
 
-Tornado is licensed under the Apache Licence, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0.html).  Copyright (C) 2009 Facebook.
+Tornado is licensed under the Apache Licence, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0.html).  Copyright (C) 2009 Facebook.  Portions Copyright (C) 2010-2011 Alice Bevan-McGregor.
