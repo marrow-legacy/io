@@ -35,9 +35,11 @@ def hello(request):
         requests="The number of requests to run, defaults to 10.",
         concurrency="The level of concurrency, defaults to 1.",
         profile="If enabled, profiling results will be saved to \"results.prof\".",
-        verbose="Increase the logging level from INFO to DEBUG."
+        verbose="Increase the logging level from INFO to DEBUG.",
+        size="Size of the returned data, in KiB, defaults to 4 MiB.",
+        block="The size of the chunks, in KiB, defaults to 1 MiB; must evenly go into size."
     )
-def main(requests=10, concurrency=1, profile=False, verbose=False):
+def main(requests=10, concurrency=1, profile=False, verbose=False, size=4096, block=1024):
     """A simple benchmark of marrow.io.
     
     This script requires that ApacheBench (ab) be installed.
@@ -51,13 +53,19 @@ def main(requests=10, concurrency=1, profile=False, verbose=False):
     
     def do():
         reactor = Reactor()
-        chunk = b"a" * 1024 * 1024
+        clength = size * 1024
+        bsize = block * 1024
+        chunk = b"a" * bsize
+        
+        print("Content-Length: %d\nChunk-Size: %d\nIterations: %d" % (clength, bsize, clength / bsize))
         
         @reactor.inline_callbacks
         def serve(stream):
-            yield stream.write(b"HTTP/1.0 200 OK\r\nContent-Length: 4194304\r\n\r\n")
+            request = yield stream.read(82)
             
-            for i in range(4):
+            yield stream.write(b"HTTP/1.0 200 OK\r\nContent-Length: %d\r\n\r\n" % (clength, ))
+            
+            for i in range(clength / bsize):
                 yield stream.write(chunk)
             
             stream.close()
@@ -80,21 +88,24 @@ def main(requests=10, concurrency=1, profile=False, verbose=False):
                 pass
             
             exc = exception()
+            ok = False
             
-            if exc.args[0] == 4:
-                pass # Eat "Interrupted system call"
+            try:
+                if exc.args[0] == 4:
+                    ok = True # Eat "Interrupted system call"
+            except: pass
             
-            else:
+            if not ok:
                 logging.exception("Recieved exception.")
         
         stdout, stderr = proc.communicate()
         
         try:
             rate = float(stdout.split("\n")[0].split()[2].strip())
-            print("%dR C%d = %0.2f MiB/s" % (requests, concurrency, rate / 1024.0))
+            print("Result: %dR C%d = %0.2f MiB/s" % (requests, concurrency, rate / 1024.0))
         
         except:
-            print("ApacheBench STDERR:\n%s\n\nApacheBench STDOUT:\n%s" % (stderr, stdout))
+            print("\nApacheBench STDERR:\n%s\n\nApacheBench STDOUT:\n%s" % (stderr, stdout))
         
         # Transfer rate:          686506.82 [Kbytes/sec] received
     

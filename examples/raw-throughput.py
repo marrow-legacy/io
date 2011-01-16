@@ -11,14 +11,15 @@ except:
 
 
 reactor = Reactor()
-chunk = b"a" * 1024 * 1024
+chunk = b"a" * 1024 * 4
 
 
 @reactor.inline_callbacks
 def serve(stream):
+    request = yield stream.read(82)
     yield stream.write(b"HTTP/1.0 200 OK\r\nContent-Length: 4194304\r\n\r\n")
     
-    for i in range(4):
+    for i in range(1024):
         yield stream.write(chunk)
     
     stream.close()
