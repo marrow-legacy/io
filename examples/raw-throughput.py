@@ -11,13 +11,16 @@ except:
 
 
 reactor = Reactor()
-chunk = b"a" * 4096
-message = b"HTTP/1.0 200 OK\r\nContent-Length: 4194304\r\n\r\n" + chunk * 1024
+chunk = b"a" * 1024 * 1024
 
 
 @reactor.inline_callbacks
 def serve(stream):
-    yield stream.write(message)
+    yield stream.write(b"HTTP/1.0 200 OK\r\nContent-Length: 4194304\r\n\r\n")
+    
+    for i in range(4):
+        yield stream.write(chunk)
+    
     stream.close()
 
 
