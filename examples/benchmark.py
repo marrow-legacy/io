@@ -94,7 +94,7 @@ def main(requests=10, concurrency=1, profile=False, verbose=False):
             print("%dR C%d = %0.2f MiB/s" % (requests, concurrency, rate / 1024.0))
         
         except:
-            print("ApacheBench STDERR:\n%s\n\nApacheBench STDOUT:\n%s", stderr, stdout)
+            print("ApacheBench STDERR:\n%s\n\nApacheBench STDOUT:\n%s" % (stderr, stdout))
         
         # Transfer rate:          686506.82 [Kbytes/sec] received
     
