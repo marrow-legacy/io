@@ -14,7 +14,7 @@ setup(
     version=version,
     description='An I/O loop for asynchronous network applications',
     long_description=open('README.rst').read(),
-    author='Alex Grönholm',
+    author=u'Alex Grönholm',
     author_email='alex.gronholm+pypi@nextday.fi',
     url='http://github.com/pulp/marrow.io',
     download_url='http://github.com/pulp/marrow.io/downloads',
