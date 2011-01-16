@@ -9,10 +9,11 @@ import signal
 import subprocess
 import logging
 import socket
+import select as _select
 
 from marrow.util.compat import exception
 from marrow.script import script, describe, execute
-from marrow.io.reactor import Reactor, SelectReactor
+from marrow.io import ioloop
 
 try:
     from marrow.io.reactor import EPollReactor
@@ -60,21 +61,21 @@ def main(number=10, concurrency=1, profile=False, verbose=False, size=4096, bloc
     
     def do():
         if not select and not epoll:
-            reactor = Reactor()
+            pass
         
         elif select and epoll:
             print("Can't set both epoll and select reactors for simultaneous use!")
             return
         
         elif select:
-            reactor = SelectReactor()
+            ioloop._poll = ioloop._Select
         
         elif epoll:
-            if EPollReactor is None:
-                print("EPollReactor not available!")
+            try:
+                ioloop._poll = _select.epoll
+            except:
+                print("EPoll not available.")
                 return
-            
-            reactor = EPollReactor()
         
         clength = size * 1024
         bsize = block * 1024
