@@ -1,7 +1,8 @@
 from concurrent.futures import Future
 from io import BytesIO
-from socket import MSG_PEEK
+import socket
 import sys
+import errno
 
 
 class StreamException(Exception):
@@ -38,14 +39,17 @@ class IOStream(object):
     def read(self, num_bytes):
         def _read():
             try:
-                data = self._socket.recv(bytes_left[0])
-            except Exception:
-                self._read_result(exception=sys.exc_info()[1])
-                return
-
-            buffer.write(data)
-            bytes_left[0] -= len(data)
-            if len(data) == 0 or bytes_left[0] == 0:
+                while bytes_left > 0:
+                    data = self._socket.recv(bytes_left[0])
+                    if not data:
+                        break
+                    buffer.write(data)
+                    bytes_left[0] -= len(data)
+            except socket.error:
+                exc = sys.exc_info()[1]
+                if exc.errno not in (errno.EAGAIN, errno.EWOULDBLOCK):
+                    self._read_result(exception=exc)
+            else:
                 self._read_result(buffer.getvalue())
 
         if self._read_future:
@@ -61,7 +65,7 @@ class IOStream(object):
     def read_until(self, delimiter, read_chunk=8192, max_buffer_size=104857600):
         def _read():
             try:
-                data = self._socket.recv(read_chunk, MSG_PEEK)
+                data = self._socket.recv(read_chunk, socket.MSG_PEEK)
             except Exception:
                 self._read_result(exception=sys.exc_info()[1])
 
@@ -89,18 +93,21 @@ class IOStream(object):
     def write(self, data):
         def _write():
             try:
-                written = self._socket.send(data[pos[0]:])
-            except Exception:
-                self._write_result(exception=sys.exc_info()[1])
+                while pos[0] < data_size:
+                    written = self._socket.send(data[pos[0]:])
+                    pos[0] += written
+            except socket.error:
+                exc = sys.exc_info()[1]
+                if exc.errno not in (errno.EAGAIN, errno.EWOULDBLOCK):
+                    self._write_result(exception=exc)
             else:
-                pos[0] += written
-                if written == 0 or pos[0] == len(data):
-                    self._write_result(pos[0])
+                self._write_result(pos[0])
 
         if self._write_future:
             raise StreamException('Already writing to this socket')
 
         pos = [0]
+        data_size = len(data)
         self._write_future = Future()
         self._write_future.set_running_or_notify_cancel()
         self._reactor._add_write_socket(self._socket, _write)
