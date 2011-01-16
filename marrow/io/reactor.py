@@ -1,6 +1,7 @@
 from Queue import Queue, Empty
 from socket import (socket, error, AF_INET, SOCK_STREAM, SOCK_DGRAM,
-                    SOL_SOCKET, SOL_TCP, SO_ERROR, TCP_NODELAY)
+                    SOL_SOCKET, SOL_TCP, SO_ERROR, TCP_NODELAY,
+                    SO_REUSEADDR)
 from errno import EINPROGRESS
 from select import select
 from threading import current_thread
@@ -162,7 +163,7 @@ class ReactorBase(object):
             callback(IOStream(sock, self))
 
         serv_sock = socket(family, type, proto)
-        serv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serv_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         serv_sock.setblocking(0)
         serv_sock.bind(addr)
         serv_sock.listen(backlog)
