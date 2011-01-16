@@ -12,7 +12,12 @@ import socket
 
 from marrow.util.compat import exception
 from marrow.script import script, describe, execute
-from marrow.io.reactor import Reactor
+from marrow.io.reactor import Reactor, SelectReactor
+
+try:
+    from marrow.io.reactor import EPollReactor
+except ImportError:
+    EPollReactor = None
 
 try:
     range = xrange
@@ -32,14 +37,16 @@ def hello(request):
         copyright="Copyright 2010 Alice Bevan-McGregor"
     )
 @describe(
-        requests="The number of requests to run, defaults to 10.",
+        number="The number of requests to run, defaults to 10.",
         concurrency="The level of concurrency, defaults to 1.",
         profile="If enabled, profiling results will be saved to \"results.prof\".",
         verbose="Increase the logging level from INFO to DEBUG.",
         size="Size of the returned data, in KiB, defaults to 4 MiB.",
-        block="The size of the chunks, in KiB, defaults to 1 MiB; must evenly go into size."
+        block="The size of the chunks, in KiB, defaults to 1 MiB; must evenly go into size.",
+        select="Force use of the select reactor.",
+        epoll="Force use of the epoll reactor."
     )
-def main(requests=10, concurrency=1, profile=False, verbose=False, size=4096, block=1024):
+def main(number=10, concurrency=1, profile=False, verbose=False, size=4096, block=1024, select=False, epoll=False):
     """A simple benchmark of marrow.io.
     
     This script requires that ApacheBench (ab) be installed.
@@ -52,7 +59,23 @@ def main(requests=10, concurrency=1, profile=False, verbose=False, size=4096, bl
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     
     def do():
-        reactor = Reactor()
+        if not select and not epoll:
+            reactor = Reactor()
+        
+        elif select and epoll:
+            print("Can't set both epoll and select reactors for simultaneous use!")
+            return
+        
+        elif select:
+            reactor = SelectReactor()
+        
+        elif epoll:
+            if EPollReactor is None:
+                print("EPollReactor not available!")
+                return
+            
+            reactor = EPollReactor()
+        
         clength = size * 1024
         bsize = block * 1024
         chunk = b"a" * bsize
@@ -77,7 +100,7 @@ def main(requests=10, concurrency=1, profile=False, verbose=False, size=4096, bl
         
         signal.signal(signal.SIGCHLD, handle_sigchld)
         
-        proc = subprocess.Popen("ab -n %d -c %d http://127.0.0.1:8010/ | grep \"Transfer rate\"" % (requests, concurrency), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen("ab -n %d -c %d http://127.0.0.1:8010/ | grep \"Transfer rate\"" % (number, concurrency), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         try:
             reactor.start()
@@ -102,7 +125,7 @@ def main(requests=10, concurrency=1, profile=False, verbose=False, size=4096, bl
         
         try:
             rate = float(stdout.split("\n")[0].split()[2].strip())
-            print("Result: %dR C%d = %0.2f MiB/s" % (requests, concurrency, rate / 1024.0))
+            print("Result: %dR C%d = %0.2f MiB/s" % (number, concurrency, rate / 1024.0))
         
         except:
             print("\nApacheBench STDERR:\n%s\n\nApacheBench STDOUT:\n%s" % (stderr, stdout))
@@ -114,8 +137,8 @@ def main(requests=10, concurrency=1, profile=False, verbose=False, size=4096, bl
             do()
         
         else:
-            cProfile.runctx('do()', globals(), locals(), 'n%dc%d.prof' % (requests, concurrency))
-            print("\nProfiling results written to: %s\n" % ('n%dc%d.prof' % (requests, concurrency)))
+            cProfile.runctx('do()', globals(), locals(), 'n%dc%d.prof' % (number, concurrency))
+            print("\nProfiling results written to: %s\n" % ('n%dc%d.prof' % (number, concurrency)))
     
     except KeyboardInterrupt:
         print("\nBenchmark cancelled.\n")
