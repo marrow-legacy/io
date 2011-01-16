@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 
+import errno
 import sys
 import cProfile
 import signal
@@ -10,10 +11,11 @@ import subprocess
 import logging
 import socket
 import select as _select
+import functools
 
 from marrow.util.compat import exception
 from marrow.script import script, describe, execute
-from marrow.io import ioloop
+from marrow.io import ioloop, iostream
 
 try:
     from marrow.io.reactor import EPollReactor
@@ -109,7 +111,7 @@ def main(number=10, concurrency=1, profile=False, verbose=False, size=4096, bloc
                     
                     stream.write(b"HTTP/1.0 200 OK\r\nContent-Length: %s\r\n\r\n" % (clength, ), functools.partial(write_chunk, stream))
                 
-                stream.read(82, functools.partial(read_request, stream)
+                stream.read_bytes(82, functools.partial(read_request, stream))
         
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -123,7 +125,7 @@ def main(number=10, concurrency=1, profile=False, verbose=False, size=4096, bloc
         io_loop.add_handler(sock.fileno(), callback, io_loop.READ)
         
         def handle_sigchld(sig, frame):
-            reactor.shutdown()
+            io_loop.stop()
         
         signal.signal(signal.SIGCHLD, handle_sigchld)
         
@@ -133,34 +135,20 @@ def main(number=10, concurrency=1, profile=False, verbose=False, size=4096, bloc
             io_loop.start()
         except KeyboardInterrupt:
             print("\nKilled by user request.")
-            try:
-                io_loop.stop()
-            except:
-                pass
-        except:
-            try:
-                io_loop.stop()
-            except:
-                pass
-            
-            exc = exception()
-            ok = False
-            
-            try:
-                if exc.args[0] == 4:
-                    ok = True # Eat "Interrupted system call"
+            try: io_loop.stop()
             except: pass
-            
-            if not ok:
-                logging.exception("Recieved exception.")
+        except:
+            try: io_loop.stop()
+            except: pass
         
         stdout, stderr = proc.communicate()
         
         try:
             rate = float(stdout.split("\n")[0].split()[2].strip())
-            print("Result: %s %d/%d KiB, %dR C%d = %0.2f MiB/s" % (reactor.__class__.__name__, size, block, number, concurrency, rate / 1024.0))
+            print("Result: %s %d/%d KiB, %dR C%d = %0.2f MiB/s" % (ioloop._poll.__class__.__name__, size, block, number, concurrency, rate / 1024.0))
         
         except:
+            
             print("\nApacheBench STDERR:\n%s\n\nApacheBench STDOUT:\n%s" % (stderr, stdout))
         
         # Transfer rate:          686506.82 [Kbytes/sec] received
