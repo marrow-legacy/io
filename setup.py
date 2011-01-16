@@ -42,7 +42,7 @@ setup(
     packages=find_packages(exclude=['tests', 'tests.*', 'docs']),
     include_package_data=True,
     package_data={
-        '': ['Makefile', 'README.textile', 'LICENSE', 'distribute_setup.py']
+        '': ['Makefile', 'README.rst', 'LICENSE', 'distribute_setup.py']
     },
     zip_safe=False,
     namespace_packages=['marrow'],
