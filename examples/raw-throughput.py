@@ -13,8 +13,7 @@ from marrow.util.compat import exception
 from marrow.io import ioloop, iostream
 
 log = __import__('logging').getLogger(__name__)
-chunk = b"a" * 4096
-message = b"HTTP/1.0 200 OK\r\nContent-Length: 4194304\r\n\r\n" + chunk * 1024
+chunk = b"a" * 1024 * 1024
 
 
 def connection_ready(sock, fd, events):
@@ -32,7 +31,14 @@ def connection_ready(sock, fd, events):
         connection.setblocking(0)
         stream = iostream.IOStream(connection)
         
-        stream.write(message, stream.close)
+        def write_chunk(stream, chunks_written=0):
+            if chunks_written == 4:
+                stream.close()
+                return
+            
+            stream.write(chunk, functools.partial(write_chunk, stream, chunks_written+1))
+        
+        stream.write(b"HTTP/1.0 200 OK\r\nContent-Length: 4194304\r\n\r\n", functools.partial(write_chunk, stream))
 
 
 if __name__ == '__main__':
