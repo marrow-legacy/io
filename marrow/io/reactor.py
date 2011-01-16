@@ -37,6 +37,7 @@ class ReactorBase(object):
         self._read_callbacks = {}
         self._write_list = []
         self._write_callbacks = {}
+        self._sock = None
 
         self._notify_recv_socket = socket(AF_INET, SOCK_DGRAM)
         self._notify_recv_socket.bind(('127.0.0.1', 0))
@@ -117,6 +118,7 @@ class ReactorBase(object):
 
     def shutdown(self):
         self.call_in_reactor(setattr, self, '_shutdown', True)
+        self.call_in_reactor(self._sock.close)
 
     def call_in_reactor(self, func, *args, **kwargs):
         future = Future()
@@ -163,6 +165,7 @@ class ReactorBase(object):
         serv_sock.setblocking(False)
         serv_sock.bind(addr)
         serv_sock.listen(backlog)
+        self._sock = serv_sock
         self._add_read_socket(serv_sock, _accept)
 
     def connect(self, addr, family=AF_INET, type=SOCK_STREAM, proto=0):

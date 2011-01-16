@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from __future__ import unicode_literals
 import os
 
 from distribute_setup import use_setuptools
@@ -15,7 +14,7 @@ setup(
     version=version,
     description='An I/O loop for asynchronous network applications',
     long_description=open('README.rst').read(),
-    author='Alex Grönholm',
+    author=u'Alex Grönholm',
     author_email='alex.gronholm+pypi@nextday.fi',
     url='http://github.com/pulp/marrow.io',
     download_url='http://github.com/pulp/marrow.io/downloads',
@@ -42,7 +41,7 @@ setup(
     packages=find_packages(exclude=['tests', 'tests.*', 'docs']),
     include_package_data=True,
     package_data={
-        '': ['Makefile', 'README.textile', 'LICENSE', 'distribute_setup.py']
+        '': ['Makefile', 'README.rst', 'LICENSE', 'distribute_setup.py']
     },
     zip_safe=False,
     namespace_packages=['marrow'],
