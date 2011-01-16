@@ -39,7 +39,7 @@ class IOStream(object):
     def read(self, num_bytes):
         def _read():
             try:
-                while bytes_left > 0:
+                while bytes_left[0] > 0:
                     data = self._socket.recv(bytes_left[0])
                     if not data:
                         break
