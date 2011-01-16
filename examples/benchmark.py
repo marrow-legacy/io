@@ -106,6 +106,10 @@ def main(number=10, concurrency=1, profile=False, verbose=False, size=4096, bloc
             reactor.start()
         except KeyboardInterrupt:
             print("\nKilled by user request.")
+            try:
+                reactor._sock.close()
+            except:
+                pass
         except:
             try:
                 reactor._sock.close()
