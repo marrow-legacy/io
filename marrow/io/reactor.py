@@ -162,7 +162,8 @@ class ReactorBase(object):
             callback(IOStream(sock, self))
 
         serv_sock = socket(family, type, proto)
-        serv_sock.setblocking(False)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serv_sock.setblocking(0)
         serv_sock.bind(addr)
         serv_sock.listen(backlog)
         self._sock = serv_sock
