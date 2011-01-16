@@ -239,7 +239,7 @@ class SelectReactor(ReactorBase):
             self._exc_set.remove(sock)
 
     def _remove_write_socket(self, sock):
-        ReactorBase._remove_read_socket(self, sock)
+        ReactorBase._remove_write_socket(self, sock)
         if not sock in self._read_list:
             self._exc_set.remove(sock)
 
