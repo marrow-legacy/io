@@ -1,7 +1,7 @@
-from ioloop.reactor import Reactor
+from marrow.io.reactor import SelectReactor
 
 
-reactor = Reactor()
+reactor = SelectReactor()
 
 @reactor.inline_callbacks
 def serve(stream):

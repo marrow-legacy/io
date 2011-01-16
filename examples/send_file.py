@@ -1,11 +1,11 @@
 import sys
 
-from ioloop.reactor import Reactor
+from marrow.io.reactor import SelectReactor
 
 
 BLKSIZE = 32768
 
-reactor = Reactor()
+reactor = SelectReactor()
 
 @reactor.inline_callbacks
 def upload():
