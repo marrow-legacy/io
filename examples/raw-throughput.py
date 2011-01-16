@@ -14,6 +14,7 @@ from marrow.io import ioloop, iostream
 
 log = __import__('logging').getLogger(__name__)
 chunk = b"a" * 4096
+message = b"HTTP/1.0 200 OK\r\nContent-Length: 4194304\r\n\r\n" + chunk * 1024
 
 
 def connection_ready(sock, fd, events):
@@ -31,14 +32,7 @@ def connection_ready(sock, fd, events):
         connection.setblocking(0)
         stream = iostream.IOStream(connection)
         
-        def write_chunk(stream, chunks_written=0):
-            if chunks_written == 1024:
-                stream.close()
-                return
-            
-            stream.write(chunk, functools.partial(write_chunk, stream, chunks_written+1))
-        
-        stream.write(b"HTTP/1.0 200 OK\r\nContent-Length: 4194304\r\n\r\n", functools.partial(write_chunk, stream))
+        stream.write(message, stream.close)
 
 
 if __name__ == '__main__':
