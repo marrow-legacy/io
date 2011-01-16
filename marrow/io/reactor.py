@@ -10,7 +10,7 @@ from types import GeneratorType
 import sys
 import os
 
-from ioloop.stream import IOStream
+from marrow.io.stream import IOStream
 
 try:
     from select import epoll, EPOLLIN, EPOLLOUT, EPOLLERR
@@ -244,67 +244,67 @@ class SelectReactor(ReactorBase):
             self._exc_set.remove(sock)
 
 
-class EPollReactor(ReactorBase):
-    READ_MASK = EPOLLIN | EPOLLERR
-    WRITE_MASK = EPOLLOUT | EPOLLERR
-    ALL_MASK = EPOLLIN | EPOLLOUT | EPOLLERR
-
-    def __init__(self):
-        self._epoll = epoll()
-        self._read_map = {}
-        self._write_map = {}
-        ReactorBase.__init__(self)
-
-    def start(self):
-        if self.started:
-            raise ReactorError('The reactor has already been started')
-
-        self._thread = current_thread()
-        while not self._shutdown:
-            for fd, events in self._epoll.poll():
-                if events & self.READ_MASK:
-                    sock = self._read_map[fd]
-                    self._read_callbacks[sock]()
-                if events & self.WRITE_MASK:
-                    sock = self._write_map[fd]
-                    self._write_callbacks[sock]()
-
-        # Cleanup
-        self._notify_send_socket.close()
-        self._notify_recv_socket.close()
-        self._epoll.close()
-
-    def _add_read_socket(self, sock, callback):
-        ReactorBase._add_read_socket(self, sock, callback)
-        if sock.fileno() not in self._read_map:
-            self._epoll.register(sock, self.READ_MASK)
-        else:
-            self._epoll.modify(sock, self.ALL_MASK)
-        self._read_map[sock.fileno()] = sock
-
-    def _add_write_socket(self, sock, callback):
-        ReactorBase._add_write_socket(self, sock, callback)
-        if sock.fileno() not in self._write_map:
-            self._epoll.register(sock, self.WRITE_MASK)
-        else:
-            self._epoll.modify(sock, self.ALL_MASK)
-        self._write_map[sock.fileno()] = sock
-
-    def _remove_read_socket(self, sock):
-        ReactorBase._remove_read_socket(self, sock)
-        if sock.fileno() not in self._write_map:
-            self._epoll.unregister(sock)
-        del self._read_map[sock.fileno()]
-
-    def _remove_write_socket(self, sock):
-        ReactorBase._remove_write_socket(self, sock)
-        if sock.fileno() not in self._read_map:
-            self._epoll.unregister(sock)
-        del self._write_map[sock.fileno()]
-
-
 # Determine the best default choice for the current platform
 if epoll:
+    class EPollReactor(ReactorBase):
+        READ_MASK = EPOLLIN | EPOLLERR
+        WRITE_MASK = EPOLLOUT | EPOLLERR
+        ALL_MASK = EPOLLIN | EPOLLOUT | EPOLLERR
+
+        def __init__(self):
+            self._epoll = epoll()
+            self._read_map = {}
+            self._write_map = {}
+            ReactorBase.__init__(self)
+
+        def start(self):
+            if self.started:
+                raise ReactorError('The reactor has already been started')
+
+            self._thread = current_thread()
+            while not self._shutdown:
+                for fd, events in self._epoll.poll():
+                    if events & self.READ_MASK:
+                        sock = self._read_map[fd]
+                        self._read_callbacks[sock]()
+                    if events & self.WRITE_MASK:
+                        sock = self._write_map[fd]
+                        self._write_callbacks[sock]()
+
+            # Cleanup
+            self._notify_send_socket.close()
+            self._notify_recv_socket.close()
+            self._epoll.close()
+
+        def _add_read_socket(self, sock, callback):
+            ReactorBase._add_read_socket(self, sock, callback)
+            if sock.fileno() not in self._read_map:
+                self._epoll.register(sock, self.READ_MASK)
+            else:
+                self._epoll.modify(sock, self.ALL_MASK)
+            self._read_map[sock.fileno()] = sock
+
+        def _add_write_socket(self, sock, callback):
+            ReactorBase._add_write_socket(self, sock, callback)
+            if sock.fileno() not in self._write_map:
+                self._epoll.register(sock, self.WRITE_MASK)
+            else:
+                self._epoll.modify(sock, self.ALL_MASK)
+            self._write_map[sock.fileno()] = sock
+
+        def _remove_read_socket(self, sock):
+            ReactorBase._remove_read_socket(self, sock)
+            if sock.fileno() not in self._write_map:
+                self._epoll.unregister(sock)
+            del self._read_map[sock.fileno()]
+
+        def _remove_write_socket(self, sock):
+            ReactorBase._remove_write_socket(self, sock)
+            if sock.fileno() not in self._read_map:
+                self._epoll.unregister(sock)
+            del self._write_map[sock.fileno()]
+
     Reactor = EPollReactor
+
 else:
     Reactor = SelectReactor
