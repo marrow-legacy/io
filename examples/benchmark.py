@@ -131,7 +131,7 @@ def main(number=10, concurrency=1, profile=False, verbose=False, size=4096, bloc
         
         try:
             rate = float(stdout.split("\n")[0].split()[2].strip())
-            print("Result: %d/%d KiB, %dR C%d = %0.2f MiB/s" % (size, block, number, concurrency, rate / 1024.0))
+            print("Result: %s %d/%d KiB, %dR C%d = %0.2f MiB/s" % (reactor.__class__.__name__, size, block, number, concurrency, rate / 1024.0))
         
         except:
             print("\nApacheBench STDERR:\n%s\n\nApacheBench STDOUT:\n%s" % (stderr, stdout))
