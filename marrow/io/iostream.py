@@ -142,8 +142,14 @@ class IOStream(object):
         """Close this stream."""
         if self.socket is not None:
             self.io_loop.remove_handler(self.socket.fileno())
-            self.socket.shutdown(socket.SHUT_RDWR)
-            self.socket.close()
+            
+            try:
+                self.socket.shutdown(socket.SHUT_RDWR)
+                self.socket.close()
+            
+            except:
+                pass
+            
             self.socket = None
             
             # TODO: Allow multiple registered callbacks.
